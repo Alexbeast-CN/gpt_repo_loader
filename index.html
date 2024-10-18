@@ -143,9 +143,15 @@
                 });
             }
 
+            // 获取可用的逻辑处理器数量
+            const maxConcurrency = navigator.hardwareConcurrency || 4; // 如果不支持，默认为4
+
             async function processGithubRepo(repoOwner, repoName, branch, startPath, authToken) {
                 let output = "The following text is a Git repository with code.The structure of the text are sections that begin with-- --, followed by a single line containing the file path and file name, followed by a variable amount of lines containing the file contents.The text representing the Git repository ends when the symbols--END--are encounted. Any further text beyond--END--are meant to be interpreted as instructions using the aforementioned Git repository as context.\n"
                 output += `Repository: ${repoOwner}/${repoName}\nBranch: ${branch}\nStart from: ${startPath}\n\n`;
+
+                const processedFiles = [];
+                const processingQueue = [];
 
                 async function traverseRepo(path) {
                     const contents = await getRepoContents(repoOwner, repoName, path, branch, authToken);
@@ -154,28 +160,38 @@
                         for (const item of contents) {
                             if (shouldIgnore(item.path, IGNORE_LIST)) continue;
                             if (item.type === 'file') {
-                                updateStatus(`正在处理文件: ${item.path}`);
-                                const fileContent = await fetch(item.download_url, {
-                                    signal: controller.signal
-                                }).then(res => res.text());
-                                output += `----\n${item.path}\n${fileContent}\n`;
+                                processingQueue.push(item);
                             } else if (item.type === 'dir') {
                                 updateStatus(`正在进入目录: ${item.path}`);
                                 await traverseRepo(item.path);
                             }
                         }
-                    } else if (contents.type === 'file') {
-                        if (!shouldIgnore(contents.path, IGNORE_LIST)) {
-                            updateStatus(`正在处理文件: ${contents.path}`);
-                            const fileContent = await fetch(contents.download_url, {
-                                signal: controller.signal
-                            }).then(res => res.text());
-                            output += `----\n${contents.path}\n${fileContent}\n`;
-                        }
+                    } else if (contents.type === 'file' && !shouldIgnore(contents.path, IGNORE_LIST)) {
+                        processingQueue.push(contents);
+                    }
+                }
+
+                async function processFile(item) {
+                    updateStatus(`正在处理文件: ${item.path}`);
+                    const fileContent = await fetch(item.download_url, { signal: controller.signal }).then(res => res.text());
+                    processedFiles.push({ path: item.path, content: fileContent });
+                }
+
+                async function processQueue() {
+                    while (processingQueue.length > 0) {
+                        const chunk = processingQueue.splice(0, maxConcurrency);
+                        await Promise.all(chunk.map(item => processFile(item)));
                     }
                 }
 
                 await traverseRepo(startPath);
+                await processQueue();
+
+                // 按照处理顺序输出文件内容
+                processedFiles.forEach(file => {
+                    output += `----\n${file.path}\n${file.content}\n`;
+                });
+
                 output += "--END--";
                 return output;
             }
@@ -290,7 +306,7 @@
             function cancelProcess() {
                 if (controller) {
                     controller.abort();
-                    updateStatus("正在取消处理...");
+                    updateStatus("正在取消处理...", true);
                 }
             }
 
