@@ -56,13 +56,16 @@
         <div id="status" class="hidden bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-8" role="alert"></div>
 
         <div id="outputContainer" class="hidden">
-            <div class="flex space-x-4 mb-4">
+            <div class="flex space-x-4 mb-4 relative">
                 <button onclick="copyOutput()" class="flex-1 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-300">
                     复制输出
                 </button>
                 <button onclick="saveOutput()" class="flex-1 bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-300">
                     保存文件
                 </button>
+                <div id="copyNotification" class="absolute left-0 -top-8 bg-gray-800 text-white px-2 py-1 rounded text-sm opacity-0 transition-opacity duration-200">
+                    已复制到剪贴板
+                </div>
             </div>
             <div class="h-96 overflow-y-auto">
                 <pre id="output" class="bg-gray-800 text-white p-4 rounded-lg whitespace-pre-wrap break-words"></pre>
@@ -299,7 +302,15 @@
                 textArea.select();
                 document.execCommand('copy');
                 document.body.removeChild(textArea);
-                alert('输出已复制到剪贴板！');
+                
+                // 显示通知
+                const notification = document.getElementById('copyNotification');
+                notification.style.opacity = '1';
+                
+                // 2秒后隐藏通知
+                setTimeout(() => {
+                    notification.style.opacity = '0';
+                }, 2000);
             }
 
             function saveOutput() {
