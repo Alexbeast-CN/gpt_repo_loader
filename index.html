@@ -17,8 +17,7 @@
     <div class="container mx-auto px-4 py-8 max-w-3xl">
         <h1 class="text-4xl font-bold text-center text-gray-800 mb-2">GPT 仓库加载器</h1>
         <h2 class="text-xl text-center text-gray-600 mb-3">将任何 GitHub 仓库转换为 .txt 类型知识库</h2>
-        <p class="text-center text-gray-600">使用 "https://github.com/id/repo/tree/xxx" 以访问指定分支。</p>
-        <p class="text-center text-gray-600 mb-8">不加分支网址，"/tree/xxx" 则默认访问 main 分支。</p>
+        <p class="text-center text-gray-600 mb-4">使用 "https://github.com/id/repo/tree/xxx" 以访问指定分支。</p>
         <div class="flex justify-center mb-8">
             <span class="mr-2">送我一颗小星星 <svg class="inline-block w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg></span>
             <a href="https://github.com/Alexbeast-CN/gpt_repo_loader" target="_blank" class="text-blue-500 hover:text-blue-700 underline flex items-center">
@@ -29,9 +28,13 @@
         <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
             <div class="mb-4">
                 <label for="repoUrl" class="block text-sm font-medium text-gray-700 mb-2">GitHub 仓库 URL:</label>
-                <input type="text" id="repoUrl" placeholder="例如: https://github.com/Alexbeast-CN/gpt_repo_loader" 
-                       class="w-full px-3 py-2 placeholder-gray-400 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-indigo-100 focus:border-indigo-300"
-                       onkeypress="handleKeyPress(event)">
+                <input type="text" id="repoUrl" placeholder="例如: https://github.com/Alexbeast-CN/gpt_repo_loader" class="w-full px-3 py-2 placeholder-gray-400 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-indigo-100 focus:border-indigo-300"
+                    onkeypress="handleKeyPress(event)">
+            </div>
+
+            <div class="mb-4">
+                <label for="token" class="block text-sm font-medium text-gray-700 mb-2">GitHub 个人访问令牌（可选）:</label>
+                <input type="text" id="token" placeholder="例如: ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" class="w-full px-3 py-2 placeholder-gray-400 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-indigo-100 focus:border-indigo-300">
             </div>
 
             <div class="mb-4">
@@ -192,7 +195,23 @@
                 return output;
             }
 
-            function parseGithubUrl(url) {
+            async function getDefaultBranch(repoOwner, repoName, authToken = null) {
+                const url = `${GITHUB_API_URL}/repos/${repoOwner}/${repoName}`;
+                const headers = authToken ? {
+                    Authorization: `token ${authToken}`
+                } : {};
+
+                const response = await fetch(url, { headers });
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(`获取仓库信息失败: ${data.message || '未知错误'}`);
+                }
+
+                return data.default_branch;
+            }
+
+            async function parseGithubUrl(url, authToken = null) {
                 const parsedUrl = new URL(url);
                 const pathParts = parsedUrl.pathname.split('/').filter(Boolean);
 
@@ -206,7 +225,7 @@
 
                 const repoOwner = pathParts[0];
                 const repoName = pathParts[1];
-                let branch = 'main';
+                let branch = null;
                 let startPath = "";
 
                 if (pathParts.length > 2) {
@@ -217,6 +236,11 @@
                         branch = pathParts[index + 1];
                         startPath = pathParts.slice(index + 2).join('/');
                     }
+                }
+
+                // 如果URL中没有指定分支，则获取默认分支
+                if (!branch) {
+                    branch = await getDefaultBranch(repoOwner, repoName, authToken);
                 }
 
                 return {
@@ -249,10 +273,9 @@
                 }
             }
 
-            const DEFAULT_TOKEN = "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";
-
             async function processRepo() {
                 const repoUrl = document.getElementById('repoUrl').value;
+                const authToken = document.getElementById('token').value;
                 const outputElement = document.getElementById('output');
                 const processButton = document.getElementById('processButton');
                 const cancelButton = document.getElementById('cancelButton');
@@ -278,9 +301,9 @@
                         repoName,
                         branch,
                         startPath
-                    } = parseGithubUrl(repoUrl);
+                    } = await parseGithubUrl(repoUrl, authToken);
                     updateStatus(`正在处理仓库: ${repoOwner}/${repoName}, 分支: ${branch}, 起始路径: ${startPath}`);
-                    const output = await processGithubRepo(repoOwner, repoName, branch, startPath, DEFAULT_TOKEN);
+                    const output = await processGithubRepo(repoOwner, repoName, branch, startPath, authToken);
                     outputElement.textContent = output;
                     outputContainer.style.display = 'block';
                     updateStatus("仓库内容处理成功。");
