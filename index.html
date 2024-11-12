@@ -10,19 +10,95 @@
         .custom-shadow {
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
+
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            cursor: pointer;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .slide-down {
+            animation: slideDown 0.3s ease-out;
+        }
     </style>
 </head>
 
 <body class="bg-gray-100 font-sans">
     <div class="container mx-auto px-4 py-8 max-w-3xl">
-        <h1 class="text-4xl font-bold text-center text-gray-800 mb-2">GPT 仓库加载器</h1>
-        <h2 class="text-xl text-center text-gray-600 mb-3">将任何 GitHub 仓库转换为 .txt 类型知识库</h2>
-        <p class="text-center text-gray-600 mb-4">使用 "https://github.com/id/repo/tree/xxx" 以访问指定分支。</p>
-        <div class="flex justify-center mb-8">
-            <span class="mr-2">送我一颗小星星 <svg class="inline-block w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg></span>
-            <a href="https://github.com/Alexbeast-CN/gpt_repo_loader" target="_blank" class="text-blue-500 hover:text-blue-700 underline flex items-center">
-                <img src="https://img.shields.io/github/stars/Alexbeast-CN/gpt_repo_loader?style=social" alt="GitHub stars">
-            </a>
+        <h1 class="text-4xl font-bold text-center text-gray-800 mb-4">GPT 仓库加载器</h1>
+        <div class="flex justify-center items-center space-x-6 mb-6">
+            <button onclick="showGuide()" class="text-blue-600 hover:text-blue-800 flex items-center space-x-2 transition duration-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span>使用指南</span>
+            </button>
+            <div class="flex items-center space-x-2">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                </svg>
+                <a href="https://github.com/Alexbeast-CN/gpt_repo_loader" target="_blank" class="hover:opacity-90 transition duration-200">
+                    <img src="https://img.shields.io/github/stars/Alexbeast-CN/gpt_repo_loader?style=social" alt="GitHub stars" class="transform hover:scale-105 transition duration-200">
+                </a>
+            </div>
+        </div>
+
+        <div id="guideModal" class="modal-backdrop">
+            <div class="modal-content slide-down">
+                <div class="modal-close" onclick="hideGuide()">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-bold mb-4">使用指南</h2>
+                <div class="space-y-4">
+                    <div>
+                        <h3 class="font-semibold text-lg mb-2">基本使用</h3>
+                        <ul class="list-disc list-inside space-y-2 text-gray-700">
+                            <li>输入 GitHub 仓库地址，格式为：https://github.com/用户名/仓库名</li>
+                            <li>可以通过 /tree/分支名 访问指定分支</li>
+                            <li>如需访问私有仓库，请提供个人访问令牌</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-lg mb-2">高级功能</h3>
+                        <ul class="list-disc list-inside space-y-2 text-gray-700">
+                            <li>可以自定义忽略列表，添加不需要处理的文件类型</li>
+                            <li>支持导出处理结果为文本文件</li>
+                            <li>可随时取消正在进行的处理</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
@@ -388,6 +464,25 @@
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
             }
+
+            function showGuide() {
+                const modal = document.getElementById('guideModal');
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
+
+            function hideGuide() {
+                const modal = document.getElementById('guideModal');
+                modal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+
+            // 点击模态框背景关闭
+            document.getElementById('guideModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    hideGuide();
+                }
+            });
         </script>
 
         <footer class="mt-8 text-center text-gray-600">
